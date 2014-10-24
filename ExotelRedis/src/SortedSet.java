@@ -1,4 +1,5 @@
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeMap;
@@ -6,7 +7,7 @@ import java.util.TreeMap;
 class SortedSet{
 	
 	TreeMap<Double, TreeMap<String, String>> value_treemap;
-	TreeMap<String, KeyTreemapData> key_treemap;
+	HashMap<String, KeyTreemapData> key_treemap;
 	TreeMap<KeyValueData, String> key_value_treemap;
 	
 	private class KeyTreemapData{
@@ -29,7 +30,7 @@ class SortedSet{
 	}
 	SortedSet(){
 		value_treemap = new TreeMap<Double, TreeMap<String,String>>();
-		key_treemap = new TreeMap<String, SortedSet.KeyTreemapData>();
+		key_treemap = new HashMap<String, SortedSet.KeyTreemapData>();
 		key_value_treemap = new TreeMap<SortedSet.KeyValueData, String>(new Comparator<KeyValueData>() {
 
 			@Override
@@ -69,6 +70,23 @@ class SortedSet{
 		return builder.toString();
 	}
 	
+//	String zrange(int min_index, int max_index){
+//		
+//		Set<Double> valueSet = value_treemap.keySet();
+//		Iterator<Double> valueIterator = valueSet.iterator();
+//		int curIndex = 0;
+//		int index = 0;
+//		while(valueIterator.hasNext()){
+//			curIndex += value_treemap.get(valueIterator.next()).size();
+//			if(curIndex >= min_index)
+//				break;
+//			else
+//				index += curIndex;
+//		}
+//		
+//		
+//		return null;
+//	}
 	String get(int min_index, int max_index){
 		Set<KeyValueData> set = key_value_treemap.keySet();
 		Iterator<KeyValueData> iterator = set.iterator();
