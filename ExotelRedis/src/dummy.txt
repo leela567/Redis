@@ -1,0 +1,39 @@
+if(inputTokenizer.hasMoreTokens()){
+				key = inputTokenizer.nextToken();
+			}else{
+				System.out.println("Error: Less number of arguments");
+			}
+			
+			if(!inputTokenizer.hasMoreTokens()){
+				value = "";
+			}else{
+				if(command.equalsIgnoreCase("set")){
+					
+				}
+			}
+			
+			if(command.equalsIgnoreCase(SET))
+			{
+				String value = inputTokenizer.nextToken();
+				/*if(inputTokenizer.countTokens() > 3)
+				{
+					StringBuilder strbuilder = new StringBuilder();
+					
+				}*/
+				System.out.println("value "+value);
+				System.out.println(factory.getCurRedisInstance().insert(key, value));
+			}
+			else if(command.equalsIgnoreCase(GET))
+			{
+				if(inputTokenizer.hasMoreTokens())
+					System.out.println("error wrong number of arguments");
+				else
+					System.out.println("\""+factory.getCurRedisInstance().get(key)+"\"");
+			}
+			else if(command.equalsIgnoreCase(ZADD))
+			{
+				int freq = Integer.parseInt(inputTokenizer.nextToken());
+				String value = inputTokenizer.nextToken();
+				System.out.println(factory.getCurRedisInstance().insert(key, freq, value));
+			}
+		}
