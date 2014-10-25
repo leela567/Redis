@@ -65,7 +65,7 @@ class SortedSet{
 			builder.append(data.key);
 			builder.append(" ");
 			builder.append(data.value);
-			builder.append("\t");
+			builder.append(" ");
 		}
 		return builder.toString();
 	}
@@ -98,8 +98,8 @@ class SortedSet{
 				iterator.next();
 				continue;
 			}
-			builder.append(min_index-index+1+") ");
-			builder.append(iterator.next().key);
+			builder.append(index-min_index+1+") ");
+			builder.append("\""+iterator.next().key+"\"");
 			builder.append("\n");
 			
 		}
@@ -154,7 +154,7 @@ class SortedSet{
 	
 	void update(Double value, String key){
 
-		System.out.println("update");
+		//System.out.println("update");
 		KeyTreemapData key_treemap_obj = key_treemap.get(key);
 		insertInValueTreeMap(key_treemap_obj.value, value, key);
 		key_value_treemap.remove(key_treemap_obj.key_value_obj);
@@ -164,7 +164,7 @@ class SortedSet{
 		
 	}
 	void insert(Double value, String key){
-		System.out.println("insert");
+		//System.out.println("insert");
 		KeyValueData key_value_obj = new KeyValueData(value, key);
 		KeyTreemapData key_treemap_obj = new KeyTreemapData(value, key_value_obj);
 		key_treemap.put(key, key_treemap_obj);

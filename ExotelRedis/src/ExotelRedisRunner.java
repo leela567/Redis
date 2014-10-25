@@ -1,3 +1,9 @@
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.Calendar;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 
@@ -21,13 +27,13 @@ public class ExotelRedisRunner{
 			if(inputTokenizer.hasMoreTokens()){
 				command = inputTokenizer.nextToken();
 			}else{
-				System.out.println("Error: Less number of arguments");
+				System.err.println("Error: Less number of arguments");
 			}
 			
 			if(command.equalsIgnoreCase("get")){
 				if(inputTokenizer.countTokens() == 1){
 					key = inputTokenizer.nextToken();
-					System.out.println("command: "+command+" key: "+key);
+					//System.out.println("command: "+command+" key: "+key);
 					System.out.println("\""+factory.getCurRedisInstance().get(key)+"\"");
 				}else{
 					System.err.println("(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 1)");
@@ -50,11 +56,12 @@ public class ExotelRedisRunner{
 					}else if(inputTokenizer.countTokens() > 0)
 					{
 						System.err.println("(error) ERR Syntax error");
+						continue;
 					}
 				}else{
 					value = "";
 				}
-				System.out.println("command: "+command+" key: "+key+" value: "+value);
+				//System.out.println("command: "+command+" key: "+key+" value: "+value);
 				if(command.equalsIgnoreCase("setnx")){
 					System.out.println(factory.getCurRedisInstance().insert(key, value));
 				}else{
@@ -82,7 +89,7 @@ public class ExotelRedisRunner{
 						}
 						value = stringBuilder.substring(0, stringBuilder.length()-1);
 					}
-					System.out.println("command: "+command+" key: "+key+" ttl: "+ttl+" value: "+value);
+					//System.out.println("command: "+command+" key: "+key+" ttl: "+ttl+" value: "+value);
 					System.out.println(factory.getCurRedisInstance().insert(key, value, ttl));
 				}else{
 					System.err.println("(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 3)");
@@ -114,7 +121,7 @@ public class ExotelRedisRunner{
 					}else if(member_key.charAt(0) == '"'){
 						member_key = member_key.substring(1, member_key.length()-1);
 					}
-					System.out.println("Command: "+command+" key: "+key+" member_value "+member_value+" member_key "+member_key);
+					//System.out.println("Command: "+command+" key: "+key+" member_value "+member_value+" member_key "+member_key);
 					
 					System.out.println(factory.getCurRedisInstance().insert(key, member_key, member_value));
 				}else{
@@ -160,8 +167,61 @@ public class ExotelRedisRunner{
 					key = inputTokenizer.nextToken();
 					System.out.println(factory.getCurRedisInstance().getCount(key));
 				}
+			}else if(command.equalsIgnoreCase("getbit")){
+				if(inputTokenizer.countTokens() == 2){
+					key = inputTokenizer.nextToken();
+					long bit_offset;
+					try{
+						bit_offset = Long.parseLong(inputTokenizer.nextToken());
+					}catch(NumberFormatException e){
+						System.err.println("(error) ERR bit offset is not an integer or out of range");
+						continue;
+					}
+					factory.getCurRedisInstance().getbit(key, bit_offset);
+				}else{
+					System.err.println("error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 2)");
+				}
+				
+			}else if(command.equalsIgnoreCase("setbit")){
+				
+				if(inputTokenizer.countTokens() == 3){
+					key = inputTokenizer.nextToken();
+					long bit_position;
+					int bit;
+					try{
+						bit_position = Long.parseLong(inputTokenizer.nextToken());
+					}catch(NumberFormatException e){
+						System.err.println("(error) ERR bit offset is not an integer or out of range");
+						continue;
+					}
+					try{
+						bit = Integer.parseInt(inputTokenizer.nextToken());
+					}catch(NumberFormatException e){
+						System.err.println("(error) ERR bit is not an integer or out of range");
+						continue;
+					}
+					factory.getCurRedisInstance().setbit(key, bit_position, bit);
+				}else{
+					System.err.println("(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 3)");
+				}
+			}else if(command.equalsIgnoreCase("save")){
+				String saveStr = factory.getCurRedisInstance().toString();
+				try {
+					String filename = "exotelredis"+Calendar.getInstance().getTimeInMillis()+".RDB";
+					File file = new File(filename);
+					FileOutputStream fos = new FileOutputStream(file);
+					Writer out = new OutputStreamWriter(fos, "UTF8");
+					out.write(saveStr);
+					out.close();
+					System.out.println(filename+" saved");
+				} catch (IOException e) {
+					// TODO: handle exception
+					e.printStackTrace();
+				}
 			}else if(command.equalsIgnoreCase("exit")){
 				break;
+			}else{
+				System.err.println("(error) I'm sorry, I don't recognize that command.");
 			}
 		}
 			

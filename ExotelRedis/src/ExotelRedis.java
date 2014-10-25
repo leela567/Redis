@@ -1,16 +1,26 @@
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.TreeMap;
+import java.util.Iterator;
+import java.util.Set;
 
-class ExotelRedis{
+import javax.xml.bind.DatatypeConverter;
+
+class ExotelRedis implements Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private static String STRING_TYPE = String.class.getName();
 	private static String SORTED_SET_TYPE = SortedSet.class.getName();
+	private static String STRING_BIT_TYPE = "BIT_TYPE";
 	private class RedisData{
 		Object data;
 		long created_time;
 		String dataType;
+		byte[] byteArray;
 		public RedisData() {
 			// TODO Auto-generated constructor stub
 			this.created_time = -1;
@@ -18,16 +28,36 @@ class ExotelRedis{
 		}
 	}
 	
-	private class list{
-		HashMap<String, SortedMapData> member_map;
-		//List<>
-	}
-	private class SortedMapData{
-		int freq;
-		String value;
-	}
 	
 	HashMap<String, RedisData> hashMap = new HashMap<String, ExotelRedis.RedisData>();
+	
+	public String toString() {
+		Set<String> keySet = hashMap.keySet();
+		Iterator<String> keyIterator = keySet.iterator();
+		StringBuilder builder = new StringBuilder();
+		while(keyIterator.hasNext()){
+			String curKey = keyIterator.next();
+			RedisData curData = hashMap.get(curKey);
+			builder.append(curKey);
+			builder.append(" ");
+			if(curData.dataType.equals(STRING_TYPE)){
+				builder.append(STRING_TYPE);
+				builder.append(" ");
+				builder.append((String)curData.data);
+			}else if(curData.dataType.equals(STRING_BIT_TYPE)){
+				builder.append(STRING_BIT_TYPE);
+				builder.append(" ");
+				builder.append((String)curData.data);
+			}else if(curData.dataType.equals(SORTED_SET_TYPE)){
+				builder.append(SORTED_SET_TYPE);
+				builder.append(" ");
+				builder.append(((SortedSet)curData.data).toString());
+			}
+			builder.append("\n");
+			
+		}
+		return builder.toString();
+	}
 	
 	String insert(String key, String value)
 	{
@@ -79,28 +109,6 @@ class ExotelRedis{
 		}
 		hashMap.put(key, value);
 	}
-	String insert(String key, int frequency, String value)
-	{
-		RedisData curValue = hashMap.get(key);
-		if(curValue == null)
-		{
-			curValue = new RedisData();
-			curValue.data = new TreeMap<SortedMapData, String>(new Comparator<SortedMapData>() {
-
-				@Override
-				public int compare(SortedMapData o1, SortedMapData o2) {
-					// TODO Auto-generated method stub
-					if(o1.freq > o2.freq)
-						return 1;
-					else if(o1.freq < o2.freq)
-						return -1;
-					else 
-						return 0;
-				}
-			});
-		}
-		return "OK";
-	}
 	
 	String insert(String key, String member_key, Double member_value){
 		RedisData curValue = hashMap.get(key);
@@ -121,6 +129,135 @@ class ExotelRedis{
 		return "OK";
 	}
 	
+	void addbit(RedisData curValue, int byte_pos, int bit, long bit_offset){
+		
+		byte[] new_byte_val = new byte[byte_pos+1];
+		byte curByte = new_byte_val[byte_pos];
+		int curBit_pos = (int)(7 - (bit_offset & 0x7));
+		//System.out.println("byte_pos "+byte_pos + " curBit_pos"+curBit_pos+" curByte "+curByte);
+		int prev_bit = curByte & (1 << curBit_pos);
+		prev_bit = (prev_bit >> curBit_pos);
+		curByte = (byte) (curByte & ~(1 << curBit_pos));
+		curByte |= (bit << curBit_pos);
+		new_byte_val[byte_pos] = curByte;
+
+		StringBuilder builder = new StringBuilder();
+		for(int i = 0; i < new_byte_val.length; i++){
+			builder.append(DatatypeConverter.printByte(new_byte_val[i]));
+			//System.out.println(i+" "+DatatypeConverter.printByte(new_byte_val[i]));
+		}
+		curValue.data = builder.toString();
+		curValue.dataType = STRING_BIT_TYPE;
+		curValue.byteArray = new_byte_val;
+		//System.out.println("curValue "+curValue.data);
+		System.out.println(prev_bit);
+		
+	}
+
+	void getbit(String key, long bit_offset){
+		if(hashMap.containsKey(key)){
+			RedisData curValue = hashMap.get(key);
+			if(curValue.dataType.equals(SORTED_SET_TYPE)){
+				System.err.println("error) WRONGTYPE Operation against a key holding the wrong kind of value");
+				return;
+			}
+			byte[] byte_arr = null;
+			if(curValue.dataType.equals(STRING_TYPE)){
+				try {
+					byte_arr = ((String)curValue.data).getBytes("UTF8");
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}else if(curValue.dataType.equals(STRING_BIT_TYPE)){
+				
+				byte_arr = curValue.byteArray;
+				//System.out.println(STRING_BIT_TYPE+" byte_arr.lenght "+byte_arr.length);
+			}
+			int byte_pos = (int) (bit_offset >> 3);
+			if(byte_arr.length < byte_pos){
+				//System.out.println("byte_arr.length < byte_pos");
+				System.out.println("0");
+			}else{
+				byte curByte = byte_arr[byte_pos];
+				int curBit_pos = (int) (7 - (bit_offset & 0x7));
+				int prev_bit = curByte & (1 << curBit_pos);
+				prev_bit = (prev_bit >> curBit_pos);
+				/*for(int i = 0; i < byte_arr.length; i++){
+					System.out.println(byte_arr[i]);
+				}*/
+				//prev_bit = (prev_bit >> curBit_pos);
+				//System.out.println(curValue.data);
+				//System.out.println("not byte_arr.length < byte_pos");
+				System.out.println(/*curBit_pos+" "+*/prev_bit);
+			}
+			
+		}else{
+			System.out.println("0");
+		}
+	}
+	void setbit(String key, long bit_position, int bit){
+		RedisData curValue = null;
+		if(!(bit == 0 || bit == 1)){
+			System.err.println("(error) ERR bit is not an integer or out of range");
+			return;
+		}
+		if(bit_position < 0 || bit_position > 4.096e+9){
+			System.err.println("value is out of range");
+			return;
+		}
+		int byte_pos = (int)(bit_position >> 3);
+		//System.out.println(byte_pos);
+		if(hashMap.containsKey(key)){
+			curValue = hashMap.get(key);
+			if(!curValue.dataType.equals(SORTED_SET_TYPE)){
+				
+				byte[] byte_val = null;
+				if(curValue.dataType.equals(STRING_BIT_TYPE)){
+					byte_val = curValue.byteArray;
+				}else{
+				try {
+						byte_val = ((String)curValue.data).getBytes("UTF8");
+					} catch (UnsupportedEncodingException e) {
+						// TODO Auto-generated catch block
+						System.err.println("Err");
+						return;
+						//e.printStackTrace();
+					}
+				}
+				if(byte_val.length < byte_pos+1){
+					
+					addbit(curValue, byte_pos, bit, bit_position);
+					
+
+				}else{
+					
+					byte curByte = byte_val[byte_pos];
+					int curBit_pos = (int) (7 - (bit_position & 0x7));
+					int prev_bit = curByte & (1 << curBit_pos);
+					prev_bit = (prev_bit >> curBit_pos);
+					curByte = (byte) (curByte & ~(1 << curBit_pos));
+					curByte |= (bit << curBit_pos);
+					byte_val[byte_pos] = curByte;
+					StringBuilder builder = new StringBuilder();
+					//System.out.println("New");
+					for(int i = 0; i < byte_val.length; i++){
+						builder.append(DatatypeConverter.printByte(byte_val[i]));
+						//System.out.println(i+" "+DatatypeConverter.printByte(byte_val[i]));
+					}
+					curValue.data = builder.toString();
+					System.out.println(prev_bit);
+				}
+				
+			}else{
+				System.err.println("(error) WRONGTYPE Operation against a key holding the wrong kind of value");
+			}
+		}else{
+			curValue = new RedisData();
+			addbit(curValue, byte_pos, bit, bit_position);
+			hashMap.put(key, curValue);
+		}
+	}
 	int getCount(String key){
 		if(hashMap.containsKey(key)){
 				RedisData curValue = hashMap.get(key);
@@ -155,7 +292,7 @@ class ExotelRedis{
 		if(curValue == null)
 			return "(nil)";
 		else{
-			if(curValue.data.getClass().getName().equals(STRING_TYPE)){
+			if(curValue.dataType.equals(STRING_BIT_TYPE) || curValue.dataType.equals(STRING_TYPE)){
 				if(curValue.created_time == -1)
 					return (String)curValue.data;
 				else{
