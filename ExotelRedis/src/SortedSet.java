@@ -59,7 +59,7 @@ class SortedSet{
 		
 		Set<KeyValueData> keyvalueset = key_value_treemap.keySet();
 		Iterator<KeyValueData> iterator = keyvalueset.iterator();
-		StringBuilder builder = new StringBuilder();
+		StringBuilder builder = new StringBuilder("*");
 		while(iterator.hasNext()){
 			KeyValueData data = iterator.next();
 			builder.append(data.key);

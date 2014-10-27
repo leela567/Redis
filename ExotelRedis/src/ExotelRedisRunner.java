@@ -1,25 +1,39 @@
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Calendar;
-import java.util.Scanner;
 import java.util.StringTokenizer;
 
 public class ExotelRedisRunner{
 	/*private static String GET = "GET";
 	private static String SET = "SET";
 	private static String ZADD = "ZADD";*/
+	
+	//PrintWriter out = null;
 	public static void main(String[] args)
 	{
 		ExotelRedisFactory factory = ExotelRedisFactory.getInstance();
-		if(factory == null) { System.out.println("Not able to create instance"); return; }
-		
-		Scanner sc = new Scanner(System.in);
-		while(sc.hasNext())
+		String filename = /*args[0];//*/"exotelredis"+Calendar.getInstance().getTimeInMillis()+".RDB";
+		if(factory == null) { System.err.println("Not able to create instance"); return; }
+		int portnumber = 15000; //Integer.parseInt();
+		try {
+			
+			ServerSocket socket = new ServerSocket(portnumber);
+			Socket clientSocket = socket.accept();
+			//PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+			BufferedReader sc = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			
+		//Scanner sc = new Scanner(System.in);
+			String input = null;
+		while((input = sc.readLine()) != null)//while(sc.hasNext())
 		{
-			String input = sc.nextLine();
+			//String input = sc.nextLine();
 			StringTokenizer inputTokenizer = new StringTokenizer(input);
 			String command = null, key = null, value = null;
 			long ttl = -1;
@@ -27,16 +41,16 @@ public class ExotelRedisRunner{
 			if(inputTokenizer.hasMoreTokens()){
 				command = inputTokenizer.nextToken();
 			}else{
-				System.err.println("Error: Less number of arguments");
+				System.err.println("-Error: Less number of arguments");
 			}
 			
 			if(command.equalsIgnoreCase("get")){
 				if(inputTokenizer.countTokens() == 1){
 					key = inputTokenizer.nextToken();
 					//System.out.println("command: "+command+" key: "+key);
-					System.out.println("\""+factory.getCurRedisInstance().get(key)+"\"");
+					System.out.println(factory.getCurRedisInstance().get(key));
 				}else{
-					System.err.println("(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 1)");
+					System.err.println("-(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 1)");
 				}
 				
 			}else if(command.equalsIgnoreCase("set") || command.equalsIgnoreCase("setnx")){
@@ -55,7 +69,7 @@ public class ExotelRedisRunner{
 						value = stringBuilder.substring(0, stringBuilder.length()-1);
 					}else if(inputTokenizer.countTokens() > 0)
 					{
-						System.err.println("(error) ERR Syntax error");
+						System.err.println("-(error) ERR Syntax error");
 						continue;
 					}
 				}else{
@@ -77,7 +91,7 @@ public class ExotelRedisRunner{
 						if(command.equalsIgnoreCase("setex"))
 							ttl = 1000*ttl;
 					}catch(NumberFormatException e){
-						System.err.println("(error) ERR value is not an integer or out of range");
+						System.err.println("-(error) ERR value is not an integer or out of range");
 						continue;
 					}
 					value = inputTokenizer.nextToken();
@@ -92,7 +106,7 @@ public class ExotelRedisRunner{
 					//System.out.println("command: "+command+" key: "+key+" ttl: "+ttl+" value: "+value);
 					System.out.println(factory.getCurRedisInstance().insert(key, value, ttl));
 				}else{
-					System.err.println("(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 3)");
+					System.err.println("-(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 3)");
 				}
 				
 				
@@ -105,12 +119,12 @@ public class ExotelRedisRunner{
 					try{
 						member_value = Double.parseDouble(inputTokenizer.nextToken());
 					}catch(NumberFormatException e){
-						System.err.println("(error) ERR value is not a valid float");
+						System.err.println("-(error) ERR value is not a valid float");
 						continue;
 					}
 					member_key = inputTokenizer.nextToken();
 					if(inputTokenizer.countTokens() != 0 && member_key.charAt(0) != '"'){
-						System.err.println("(error) ERR syntax error");
+						System.err.println("-(error) ERR syntax error");
 					}else if(inputTokenizer.countTokens() > 0){
 						StringBuilder builder = new StringBuilder(member_key.subSequence(1, member_key.length()-1));
 						while(inputTokenizer.hasMoreTokens()){
@@ -125,7 +139,7 @@ public class ExotelRedisRunner{
 					
 					System.out.println(factory.getCurRedisInstance().insert(key, member_key, member_value));
 				}else{
-					System.err.println("(error) ERR wrong number of arguments for 'zadd' command");
+					System.err.println("-(error) ERR wrong number of arguments for 'zadd' command");
 				}
 			}
 			else if(command.equalsIgnoreCase("zget")){
@@ -142,7 +156,7 @@ public class ExotelRedisRunner{
 							min_index = Integer.parseInt(inputTokenizer.nextToken());
 							max_index = Integer.parseInt(inputTokenizer.nextToken());
 						}catch(NumberFormatException e){
-							System.err.println("(error) ERR min or max is not a float");
+							System.err.println("-(error) ERR min or max is not a float");
 							continue;
 						}
 						System.out.println(factory.getCurRedisInstance().get(key, min_index, max_index));
@@ -153,19 +167,19 @@ public class ExotelRedisRunner{
 							 min_value = Double.parseDouble(inputTokenizer.nextToken());
 							 max_value = Double.parseDouble(inputTokenizer.nextToken());
 						}catch(NumberFormatException e){
-							System.err.println("(error) ERR min or max is not a float");
+							System.err.println("-(error) ERR min or max is not a float");
 							continue;
 						}
-						System.out.println(factory.getCurRedisInstance().getCount(key, min_value, max_value));
+						System.out.println(":"+factory.getCurRedisInstance().getCount(key, min_value, max_value));
 					}
 					
 				}else{
-					System.err.println("error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 3)");
+					System.err.println("-(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 3)");
 				}
 			}else if(command.equalsIgnoreCase("zcard")){
 				if(inputTokenizer.countTokens() == 1){
 					key = inputTokenizer.nextToken();
-					System.out.println(factory.getCurRedisInstance().getCount(key));
+					System.out.println(":"+factory.getCurRedisInstance().getCount(key));
 				}
 			}else if(command.equalsIgnoreCase("getbit")){
 				if(inputTokenizer.countTokens() == 2){
@@ -174,12 +188,12 @@ public class ExotelRedisRunner{
 					try{
 						bit_offset = Long.parseLong(inputTokenizer.nextToken());
 					}catch(NumberFormatException e){
-						System.err.println("(error) ERR bit offset is not an integer or out of range");
+						System.err.println("-(error) ERR bit offset is not an integer or out of range");
 						continue;
 					}
 					factory.getCurRedisInstance().getbit(key, bit_offset);
 				}else{
-					System.err.println("error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 2)");
+					System.err.println("-(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 2)");
 				}
 				
 			}else if(command.equalsIgnoreCase("setbit")){
@@ -191,29 +205,29 @@ public class ExotelRedisRunner{
 					try{
 						bit_position = Long.parseLong(inputTokenizer.nextToken());
 					}catch(NumberFormatException e){
-						System.err.println("(error) ERR bit offset is not an integer or out of range");
+						System.err.println("-(error) ERR bit offset is not an integer or out of range");
 						continue;
 					}
 					try{
 						bit = Integer.parseInt(inputTokenizer.nextToken());
 					}catch(NumberFormatException e){
-						System.err.println("(error) ERR bit is not an integer or out of range");
+						System.err.println("-(error) ERR bit is not an integer or out of range");
 						continue;
 					}
 					factory.getCurRedisInstance().setbit(key, bit_position, bit);
 				}else{
-					System.err.println("(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 3)");
+					System.err.println("-(error) wrong number of arguments ("+inputTokenizer.countTokens()+" for 3)");
 				}
 			}else if(command.equalsIgnoreCase("save")){
 				String saveStr = factory.getCurRedisInstance().toString();
 				try {
-					String filename = "exotelredis"+Calendar.getInstance().getTimeInMillis()+".RDB";
+					
 					File file = new File(filename);
 					FileOutputStream fos = new FileOutputStream(file);
-					Writer out = new OutputStreamWriter(fos, "UTF8");
-					out.write(saveStr);
-					out.close();
-					System.out.println(filename+" saved");
+					Writer fileout = new OutputStreamWriter(fos, "UTF8");
+					fileout.write(saveStr);
+					fileout.close();
+					System.out.println("+"+filename+" saved");
 				} catch (IOException e) {
 					// TODO: handle exception
 					e.printStackTrace();
@@ -221,8 +235,12 @@ public class ExotelRedisRunner{
 			}else if(command.equalsIgnoreCase("exit")){
 				break;
 			}else{
-				System.err.println("(error) I'm sorry, I don't recognize that command.");
+				System.err.println("-(error) I'm sorry, I don't recognize that command.");
 			}
+		}
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
 			
 	}

@@ -65,7 +65,7 @@ class ExotelRedis implements Serializable{
 		
 		RedisData curValue = hashMap.get(key);
 		if(curValue != null){
-			return "(integer) 0";
+			return ":0";
 		}
 		curValue = new RedisData();
 	
@@ -73,7 +73,7 @@ class ExotelRedis implements Serializable{
 		curValue.created_time = -1;
 		curValue.dataType = STRING_TYPE;
 		hashMap.put(key, curValue);
-		return "(integer) 1";
+		return ":1";
 	}
 	String insert(String key, String value, long ttl)
 	{
@@ -99,7 +99,7 @@ class ExotelRedis implements Serializable{
 			curValue.created_time = -1;
 		}
 
-		return "OK";
+		return "+OK";
 	}
 	private void insertInMap(String key, RedisData value)
 	{
@@ -114,7 +114,7 @@ class ExotelRedis implements Serializable{
 		RedisData curValue = hashMap.get(key);
 		
 		if(curValue != null && curValue.dataType.equals(STRING_TYPE)){
-			return "(error) WRONGTYPE Operation against a key holding the wrong kind of value";
+			return "-(error) WRONGTYPE Operation against a key holding the wrong kind of value";
 		}
 		if(curValue == null){
 			curValue = new RedisData();
@@ -126,7 +126,7 @@ class ExotelRedis implements Serializable{
 		}else{
 			((SortedSet)curValue.data).add(member_value, member_key); 
 		}
-		return "OK";
+		return "+OK";
 	}
 	
 	void addbit(RedisData curValue, int byte_pos, int bit, long bit_offset){
@@ -150,7 +150,7 @@ class ExotelRedis implements Serializable{
 		curValue.dataType = STRING_BIT_TYPE;
 		curValue.byteArray = new_byte_val;
 		//System.out.println("curValue "+curValue.data);
-		System.out.println(prev_bit);
+		System.out.println(":"+prev_bit);
 		
 	}
 
@@ -177,7 +177,7 @@ class ExotelRedis implements Serializable{
 			int byte_pos = (int) (bit_offset >> 3);
 			if(byte_arr.length < byte_pos){
 				//System.out.println("byte_arr.length < byte_pos");
-				System.out.println("0");
+				System.out.println(":0");
 			}else{
 				byte curByte = byte_arr[byte_pos];
 				int curBit_pos = (int) (7 - (bit_offset & 0x7));
@@ -189,25 +189,24 @@ class ExotelRedis implements Serializable{
 				//prev_bit = (prev_bit >> curBit_pos);
 				//System.out.println(curValue.data);
 				//System.out.println("not byte_arr.length < byte_pos");
-				System.out.println(/*curBit_pos+" "+*/prev_bit);
+				System.out.println(":"+prev_bit);
 			}
 			
 		}else{
-			System.out.println("0");
+			System.out.println(":0");
 		}
 	}
 	void setbit(String key, long bit_position, int bit){
 		RedisData curValue = null;
 		if(!(bit == 0 || bit == 1)){
-			System.err.println("(error) ERR bit is not an integer or out of range");
+			System.err.println("-(error) ERR bit is not an integer or out of range");
 			return;
 		}
 		if(bit_position < 0 || bit_position > 4.096e+9){
-			System.err.println("value is out of range");
+			System.err.println("-(error) value is out of range");
 			return;
 		}
 		int byte_pos = (int)(bit_position >> 3);
-		//System.out.println(byte_pos);
 		if(hashMap.containsKey(key)){
 			curValue = hashMap.get(key);
 			if(!curValue.dataType.equals(SORTED_SET_TYPE)){
@@ -220,7 +219,7 @@ class ExotelRedis implements Serializable{
 						byte_val = ((String)curValue.data).getBytes("UTF8");
 					} catch (UnsupportedEncodingException e) {
 						// TODO Auto-generated catch block
-						System.err.println("Err");
+						System.err.println("-Err");
 						return;
 						//e.printStackTrace();
 					}
@@ -246,11 +245,11 @@ class ExotelRedis implements Serializable{
 						//System.out.println(i+" "+DatatypeConverter.printByte(byte_val[i]));
 					}
 					curValue.data = builder.toString();
-					System.out.println(prev_bit);
+					System.out.println(":"+prev_bit);
 				}
 				
 			}else{
-				System.err.println("(error) WRONGTYPE Operation against a key holding the wrong kind of value");
+				System.err.println("-(error) WRONGTYPE Operation against a key holding the wrong kind of value");
 			}
 		}else{
 			curValue = new RedisData();
@@ -290,7 +289,7 @@ class ExotelRedis implements Serializable{
 	{
 		RedisData curValue = hashMap.get(key);
 		if(curValue == null)
-			return "(nil)";
+			return "+(nil)";
 		else{
 			if(curValue.dataType.equals(STRING_BIT_TYPE) || curValue.dataType.equals(STRING_TYPE)){
 				if(curValue.created_time == -1)
@@ -298,13 +297,13 @@ class ExotelRedis implements Serializable{
 				else{
 					long curretTime = Calendar.getInstance().getTimeInMillis();
 					if(curValue.created_time - curretTime > 0)
-						return (String)curValue.data;
+						return "+"+(String)curValue.data;
 					else
-						return "(nil)";
+						return "+(nil)";
 				}
 			}
 			else
-				return "Error";
+				return "-Error";
 		}
 		
 	}
@@ -315,10 +314,10 @@ class ExotelRedis implements Serializable{
 			if(curValue.dataType.equals(SORTED_SET_TYPE)){
 				return ((SortedSet)curValue.data).get(min_index, max_index);
 			}else{
-				return "(error) WRONGTYPE Operation against a key holding the wrong kind of value";
+				return "-(error) WRONGTYPE Operation against a key holding the wrong kind of value";
 			}
 		}else{
-			return "(empty list or set)";
+			return "-(empty list or set)";
 		}
 	}
 	//String get(String key, )
